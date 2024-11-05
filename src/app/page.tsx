@@ -1,101 +1,166 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [choice, setChoice] = useState<"1" | "2">("1");
+  const [key, setKey] = useState("");
+  const [message, setMessage] = useState("");
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const alphabet = "AĂÂBCDEFGHIÎJKLMNOPQRSȘTȚUVWXYZ";
+
+  const isValidMessage = (message: string): boolean => {
+    const validChars = new Set(
+      "AĂÂBCDEFGHIÎJKLMNOPQRSȘTȚUVWXYZaăâbcdefghiîjklmnopqrsștțuvwxyz"
+    );
+    return [...message].every((char) => validChars.has(char));
+  };
+
+  const prepareMessage = (message: string): string => {
+    return message
+      .replace(/\s/g, "")
+      .toUpperCase()
+      .split("")
+      .filter((char) => alphabet.includes(char))
+      .join("");
+  };
+
+  const generateKey = (msg: string, key: string): string => {
+    if (msg.length === key.length) return key;
+    const repeatedKey = key.repeat(Math.ceil(msg.length / key.length));
+    return repeatedKey.slice(0, msg.length);
+  };
+
+  const encryptVigenere = (msg: string, key: string): string => {
+    const generatedKey = generateKey(msg, key);
+    return msg
+      .split("")
+      .map((char, i) => {
+        if (!alphabet.includes(char)) return char;
+
+        const encryptedIndex =
+          (alphabet.indexOf(char) + alphabet.indexOf(generatedKey[i])) % 31;
+        return alphabet[encryptedIndex];
+      })
+      .join("");
+  };
+
+  const decryptVigenere = (msg: string, key: string): string => {
+    const generatedKey = generateKey(msg, key);
+    return msg
+      .split("")
+      .map((char, i) => {
+        if (!alphabet.includes(char)) return char;
+
+        const decryptedIndex =
+          (alphabet.indexOf(char) - alphabet.indexOf(generatedKey[i]) + 31) %
+          31;
+        return alphabet[decryptedIndex];
+      })
+      .join("");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setResult("");
+
+    if (!isValidMessage(message)) {
+      setError(
+        "Mesajul conține caractere nepermise. Folosiți doar litere românești (A-Z, Ă, Â, Î, Ș, Ț)."
+      );
+      return;
+    }
+
+    if (key.length < 7) {
+      setError("Cheia trebuie să aibă cel puțin 7 caractere.");
+      return;
+    }
+
+    const preparedMessage = prepareMessage(message);
+    const processedKey = prepareMessage(key);
+
+    if (choice === "1") {
+      setResult(encryptVigenere(preparedMessage, processedKey));
+    } else {
+      setResult(decryptVigenere(preparedMessage, processedKey));
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl p-6">
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-8">
+          Cifrul Vigenère (Alfabetul Român)
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Operație
+            </label>
+            <select
+              value={choice}
+              onChange={(e) => setChoice(e.target.value as "1" | "2")}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="1">Criptare</option>
+              <option value="2">Decriptare</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Cheie (minim 7 caractere)
+            </label>
+            <input
+              type="text"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Introduceți cheia"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {choice === "1" ? "Mesaj de criptat" : "Mesaj de decriptat"}
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={4}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Introduceți mesajul"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {choice === "1" ? "Criptează" : "Decriptează"}
+          </button>
+        </form>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-400 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className="mt-6">
+            <h2 className="text-lg font-medium text-gray-900">
+              {choice === "1" ? "Mesaj criptat:" : "Mesaj decriptat:"}
+            </h2>
+            <div className="mt-2 p-4 bg-gray-50 rounded-md">
+              <p className="text-gray-700 break-all font-mono">{result}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
